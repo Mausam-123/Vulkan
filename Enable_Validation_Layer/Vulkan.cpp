@@ -9,6 +9,7 @@ vk_simple_triangle::~vk_simple_triangle() {
 int vk_simple_triangle::vk_init(GLFWwindow* window) {
 	try{
 		vk_create_instance();
+		vk_register_validation_layer();
 		vk_pick_physical_device();
 		vk_create_logical_device();
 	}
