@@ -75,6 +75,9 @@ private:
 	VkPipelineLayout vk_pipelineLayout;
 	VkPipeline vk_graphicsPipeline;
 
+	//Framebuffers
+	std::vector<VkFramebuffer> swapchain_framebuffer;
+
 	void vk_create_instance(void);	//Create Instance
 	void vk_register_validation_layer(void);
 	void vk_populateDebugMessengerCreateInfo(VkDebugUtilsMessengerCreateInfoEXT& createInfo);
@@ -101,4 +104,7 @@ private:
 
 	//Function to create Render Pass
 	void vk_create_render_pass(void);
+
+	//Function to create Framebuffer
+	void vk_create_framebuffer(void);
 };

@@ -44,3 +44,31 @@ void vk_simple_triangle::vk_create_render_pass(void) {
 		throw std::runtime_error("Unable to create renderpass");
 	}
 }
+
+void vk_simple_triangle::vk_create_framebuffer(void) {
+	swapchain_framebuffer.resize(swapchain_image_view.size());
+
+	//Create framebuffer for every imageview
+
+	for (size_t i = 0; i < swapchain_image_view.size(); i++) {
+		VkImageView imageview_ref[] = { swapchain_image_view[i] };
+		
+		VkFramebufferCreateInfo framebuffer_info = {};
+		framebuffer_info.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
+		framebuffer_info.pNext = nullptr;
+		framebuffer_info.attachmentCount = 1;
+		framebuffer_info.pAttachments = imageview_ref;
+		framebuffer_info.renderPass = vk_render_pass;
+		framebuffer_info.flags = 0;
+		framebuffer_info.width = swapchain_extent.width;
+		framebuffer_info.height = swapchain_extent.height;
+		framebuffer_info.layers = 1;			//Used for multiview
+
+		VkResult result = vkCreateFramebuffer(vk_device, &framebuffer_info, nullptr, &swapchain_framebuffer[i]);
+
+		if (result != VK_SUCCESS) {
+			throw std::runtime_error("Unable to create framebuffer at index");
+		}
+	}
+
+}

@@ -17,6 +17,7 @@ int vk_simple_triangle::vk_init(GLFWwindow* window) {
 		vk_create_swapchain_image_view();
 		vk_create_render_pass();
 		vk_create_pipeline();
+		vk_create_framebuffer();
 	}
 	catch (std::runtime_error& e) {
 		std::cout << "Runtime Error : %s" << e.what() << std::endl;
@@ -27,7 +28,13 @@ int vk_simple_triangle::vk_init(GLFWwindow* window) {
 }
 
 void vk_simple_triangle::vk_cleanup() {
+	//Destroy Framebuffer
+	for (size_t i = 0; i < swapchain_framebuffer.size(); i++) {
+		vkDestroyFramebuffer(vk_device, swapchain_framebuffer[i], nullptr);
+	}
+
 	//Destroy pipeline
+	vkDestroyPipeline(vk_device, vk_graphicsPipeline, nullptr);
 	vkDestroyPipelineLayout(vk_device, vk_pipelineLayout, nullptr);
 	vkDestroyRenderPass(vk_device, vk_render_pass, nullptr);
 	vkDestroyShaderModule(vk_device, vertex_shader_module, nullptr);
