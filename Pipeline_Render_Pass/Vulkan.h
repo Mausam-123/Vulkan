@@ -73,6 +73,7 @@ private:
 	VkShaderModule vertex_shader_module;
 	VkShaderModule frag_shader_module;
 	VkPipelineLayout vk_pipelineLayout;
+	VkPipeline vk_graphicsPipeline;
 
 	void vk_create_instance(void);	//Create Instance
 	void vk_register_validation_layer(void);

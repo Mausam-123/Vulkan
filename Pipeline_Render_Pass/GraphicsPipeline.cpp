@@ -38,6 +38,8 @@ VkShaderModule vk_simple_triangle::create_shader_module(const std::vector<char>&
 }
 
 void vk_simple_triangle::vk_create_pipeline() {
+    VkResult result = VK_ERROR_UNKNOWN;
+
     auto vertex_shader_code = readFile("Shaders/vert.spv");
     auto frag_shader_code = readFile("Shaders/frag.spv");
 
@@ -174,9 +176,36 @@ void vk_simple_triangle::vk_create_pipeline() {
     pipelinelayoutInfo.pushConstantRangeCount = 0.0f;
     pipelinelayoutInfo.pPushConstantRanges = nullptr;
     
-    VkResult result = vkCreatePipelineLayout(vk_device, &pipelinelayoutInfo, nullptr, &vk_pipelineLayout);
+    result = vkCreatePipelineLayout(vk_device, &pipelinelayoutInfo, nullptr, &vk_pipelineLayout);
 
     if (result != VK_SUCCESS) {
         throw std::runtime_error("Unable to create pipelineLayout");
     }
+
+    VkGraphicsPipelineCreateInfo pipeline_info = { };
+    pipeline_info.sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO;
+    pipeline_info.pNext = nullptr;
+    pipeline_info.stageCount = 2;       //Vertex Shader and Fragment Shader stages
+    pipeline_info.pStages = shaderStages;
+    pipeline_info.pVertexInputState = &vertexInputStage;
+    pipeline_info.pInputAssemblyState = &inputAssemblyStage;
+    pipeline_info.pTessellationState = nullptr;
+    pipeline_info.pViewportState = &viewPortInfo;
+    pipeline_info.pRasterizationState = &rasterizationInfo;
+    pipeline_info.pMultisampleState = &multisamplingInfo;
+    pipeline_info.pDepthStencilState = nullptr;
+    pipeline_info.pColorBlendState = &colorblendInfo;
+    pipeline_info.pDynamicState = &dynamicStateInfo;
+    pipeline_info.layout = vk_pipelineLayout;
+    pipeline_info.renderPass = vk_render_pass;
+    pipeline_info.subpass = 0;          // Consider subpass at index 0
+    pipeline_info.basePipelineHandle = VK_NULL_HANDLE;
+    pipeline_info.basePipelineIndex = -1;       //Invalid Index
+
+    result = vkCreateGraphicsPipelines(vk_device, VK_NULL_HANDLE, 1, &pipeline_info, nullptr, &vk_graphicsPipeline);
+
+    if (result != VK_SUCCESS) {
+        throw std::runtime_error("Unable to create Graphics pipeline");
+    }
+
 }
