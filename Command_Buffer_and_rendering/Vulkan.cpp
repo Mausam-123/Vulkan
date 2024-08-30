@@ -32,9 +32,11 @@ int vk_simple_triangle::vk_init(GLFWwindow* window) {
 
 void vk_simple_triangle::vk_cleanup() {
 	//Destroy Sync objects
-	vkDestroySemaphore(vk_device, image_available_sync, nullptr);
-	vkDestroySemaphore(vk_device, render_finish_sync, nullptr);
-	vkDestroyFence(vk_device, frame_render_sync, nullptr);
+	for (size_t i = 0; i < MAX_NUMBER_OF_FRAMES_INFLIGHT; i++) {
+		vkDestroySemaphore(vk_device, image_available_sync[i], nullptr);
+		vkDestroySemaphore(vk_device, render_finish_sync[i], nullptr);
+		vkDestroyFence(vk_device, frame_render_sync[i], nullptr);
+	}
 
 	//Destroy Command Pool
 	vkDestroyCommandPool(vk_device, vk_command_pool, nullptr);

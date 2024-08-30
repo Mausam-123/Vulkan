@@ -18,6 +18,8 @@ const bool enableValidationLayers = false;
 const bool enableValidationLayers = true;
 #endif
 
+#define MAX_NUMBER_OF_FRAMES_INFLIGHT 2
+
 const std::vector<const char*> validation_layer = {
 	"VK_LAYER_KHRONOS_validation"
 };
@@ -93,13 +95,14 @@ private:
 
 	//CommandBUffers
 	VkCommandPool vk_command_pool;
-	VkCommandBuffer vk_command_buffer;
+	std::vector <VkCommandBuffer> vk_command_buffer;
 	uint32_t vk_command_buffer_state;
+	uint32_t vk_current_frame = 0;
 
 	//Semaphore and Fences
-	VkSemaphore image_available_sync;
-	VkSemaphore render_finish_sync;
-	VkFence frame_render_sync;
+	std::vector<VkSemaphore> image_available_sync;
+	std::vector<VkSemaphore> render_finish_sync;
+	std::vector<VkFence> frame_render_sync;
 
 	void vk_create_instance(void);	//Create Instance
 	void vk_register_validation_layer(void);

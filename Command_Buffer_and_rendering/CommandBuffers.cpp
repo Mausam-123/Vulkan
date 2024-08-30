@@ -16,14 +16,16 @@ void vk_simple_triangle::vk_create_command_pool() {
 }
 
 void vk_simple_triangle::vk_allocate_command_buffer() {
+	vk_command_buffer.resize(MAX_NUMBER_OF_FRAMES_INFLIGHT);
+
 	VkCommandBufferAllocateInfo command_buf_alloc_info = {};
 	command_buf_alloc_info.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
 	command_buf_alloc_info.pNext = nullptr;
-	command_buf_alloc_info.commandBufferCount = 1;
+	command_buf_alloc_info.commandBufferCount = static_cast<uint32_t>(vk_command_buffer.size());
 	command_buf_alloc_info.commandPool = vk_command_pool;
 	command_buf_alloc_info.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
 
-	VkResult result = vkAllocateCommandBuffers(vk_device, &command_buf_alloc_info, &vk_command_buffer);
+	VkResult result = vkAllocateCommandBuffers(vk_device, &command_buf_alloc_info, vk_command_buffer.data());
 
 	if (result != VK_SUCCESS) {
 		throw std::runtime_error("Unable to allocate command buffer");
@@ -42,7 +44,7 @@ void vk_simple_triangle::vk_record_command_buffer(VkCommandBuffer command_buffer
 	command_buf_begin_info.pInheritanceInfo = 0;
 	command_buf_begin_info.flags = 0;
 
-	result = vkBeginCommandBuffer(vk_command_buffer, &command_buf_begin_info);
+	result = vkBeginCommandBuffer(command_buffer, &command_buf_begin_info);
 
 	if (result != VK_SUCCESS) {
 		throw std::runtime_error("Unable to start recording command buffer");
@@ -110,32 +112,32 @@ void vk_simple_triangle::vk_draw_frame_on_screen() {
 	uint32_t available_image_index;
 
 	//Wait for previous frame to finish rendering
-	vkWaitForFences(vk_device, 1, &frame_render_sync, VK_TRUE, UINT64_MAX);
-	vkResetFences(vk_device, 1, &frame_render_sync);
+	vkWaitForFences(vk_device, 1, &frame_render_sync[vk_current_frame], VK_TRUE, UINT64_MAX);
+	vkResetFences(vk_device, 1, &frame_render_sync[vk_current_frame]);
 
 	//Acquire the next frame once available
-	vkAcquireNextImageKHR(vk_device, vk_swapchain, UINT64_MAX, image_available_sync, VK_NULL_HANDLE, &available_image_index);
+	vkAcquireNextImageKHR(vk_device, vk_swapchain, UINT64_MAX, image_available_sync[vk_current_frame], VK_NULL_HANDLE, &available_image_index);
 
 	//Once image is available draw and submit to Queue
-	vkResetCommandBuffer(vk_command_buffer, 0);
-	vk_record_command_buffer(vk_command_buffer, available_image_index);
+	vkResetCommandBuffer(vk_command_buffer[vk_current_frame], 0);
+	vk_record_command_buffer(vk_command_buffer[vk_current_frame], available_image_index);
 
-	VkSemaphore wait_semaphore [] = { image_available_sync };
-	VkSemaphore signal_semaphore [] = { render_finish_sync };
+	VkSemaphore wait_semaphore [] = { image_available_sync[vk_current_frame] };
+	VkSemaphore signal_semaphore [] = { render_finish_sync[vk_current_frame] };
 	VkPipelineStageFlags pipeline_wait_stage[] = { VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT };
 
 	VkSubmitInfo submit_command_buffer = {};
 	submit_command_buffer.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
 	submit_command_buffer.pNext = nullptr;
 	submit_command_buffer.commandBufferCount = 1;
-	submit_command_buffer.pCommandBuffers = &vk_command_buffer;
+	submit_command_buffer.pCommandBuffers = &vk_command_buffer[vk_current_frame];
 	submit_command_buffer.waitSemaphoreCount = 1;
 	submit_command_buffer.pWaitSemaphores = wait_semaphore;
 	submit_command_buffer.pWaitDstStageMask = pipeline_wait_stage;
 	submit_command_buffer.signalSemaphoreCount = 1;
 	submit_command_buffer.pSignalSemaphores = signal_semaphore;
 
-	VkResult result = vkQueueSubmit(vk_graphics_queue, 1, &submit_command_buffer, frame_render_sync);
+	VkResult result = vkQueueSubmit(vk_graphics_queue, 1, &submit_command_buffer, frame_render_sync[vk_current_frame]);
 	//Once processing is done it will signal "frame_render_sync" fence
 
 	VkSwapchainKHR swap_chains[] = { vk_swapchain };
@@ -152,4 +154,6 @@ void vk_simple_triangle::vk_draw_frame_on_screen() {
 	present_image.pResults = nullptr;
 
 	vkQueuePresentKHR(vk_present_queue, &present_image);
+
+	vk_current_frame = (vk_current_frame + 1) % MAX_NUMBER_OF_FRAMES_INFLIGHT;
 }
