@@ -26,6 +26,15 @@ void vk_simple_triangle::vk_create_render_pass(void) {
 	subpass_info.preserveAttachmentCount = 0;
 	subpass_info.pPreserveAttachments = nullptr;
 	subpass_info.pDepthStencilAttachment = nullptr;
+	
+	VkSubpassDependency subpass_dependency = {};
+	subpass_dependency.srcSubpass = VK_SUBPASS_EXTERNAL;
+	subpass_dependency.dstSubpass = 0;
+	subpass_dependency.srcStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
+	subpass_dependency.srcAccessMask = 0;
+	subpass_dependency.dstStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
+	subpass_dependency.dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
+	subpass_dependency.dependencyFlags = 0;
 
 	VkRenderPassCreateInfo vk_renderpass_info = {};
 	vk_renderpass_info.sType = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO;
@@ -34,8 +43,8 @@ void vk_simple_triangle::vk_create_render_pass(void) {
 	vk_renderpass_info.pAttachments = &attachment_info;
 	vk_renderpass_info.subpassCount = 1;
 	vk_renderpass_info.pSubpasses = &subpass_info;
-	vk_renderpass_info.dependencyCount = 0;
-	vk_renderpass_info.pDependencies = nullptr;
+	vk_renderpass_info.dependencyCount = 1;
+	vk_renderpass_info.pDependencies = &subpass_dependency;
 
 
 	VkResult result = vkCreateRenderPass(vk_device, &vk_renderpass_info, nullptr, &vk_render_pass);

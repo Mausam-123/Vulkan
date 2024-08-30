@@ -20,6 +20,7 @@ int vk_simple_triangle::vk_init(GLFWwindow* window) {
 		vk_create_framebuffer();
 		vk_create_command_pool();
 		vk_allocate_command_buffer();
+		vk_create_sync_objects();
 	}
 	catch (std::runtime_error& e) {
 		std::cout << "Runtime Error : %s" << e.what() << std::endl;
@@ -30,6 +31,11 @@ int vk_simple_triangle::vk_init(GLFWwindow* window) {
 }
 
 void vk_simple_triangle::vk_cleanup() {
+	//Destroy Sync objects
+	vkDestroySemaphore(vk_device, image_available_sync, nullptr);
+	vkDestroySemaphore(vk_device, render_finish_sync, nullptr);
+	vkDestroyFence(vk_device, frame_render_sync, nullptr);
+
 	//Destroy Command Pool
 	vkDestroyCommandPool(vk_device, vk_command_pool, nullptr);
 

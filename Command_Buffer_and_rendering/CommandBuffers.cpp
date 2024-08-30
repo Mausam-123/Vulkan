@@ -6,7 +6,7 @@ void vk_simple_triangle::vk_create_command_pool() {
 	command_pool_info.pNext = nullptr;
 	//Create a graphics pool
 	command_pool_info.queueFamilyIndex = static_cast<uint32_t>(findQueueFamilyIndices(vk_physical_device).graphicsFamily.value());
-	command_pool_info.flags = 0;
+	command_pool_info.flags = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT;
 
 	VkResult result = vkCreateCommandPool(vk_device, &command_pool_info, nullptr, &vk_command_pool);
 
@@ -35,10 +35,6 @@ void vk_simple_triangle::vk_allocate_command_buffer() {
 void vk_simple_triangle::vk_record_command_buffer(VkCommandBuffer command_buffer, uint32_t image_index) {
 	VkResult result = VK_ERROR_UNKNOWN;
 
-	if (VK_COMMAND_BUFFER_INITIAL != vk_command_buffer_state) {
-		throw std::runtime_error("Command buffer is not initialized");
-	}
-
 	//Put the command buffer into RECORDING STATE
 	VkCommandBufferBeginInfo command_buf_begin_info = {};
 	command_buf_begin_info.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
@@ -56,7 +52,7 @@ void vk_simple_triangle::vk_record_command_buffer(VkCommandBuffer command_buffer
 
 	//Now command buffer is ready to accept command that will be executed on hardware
 
-	VkClearValue clear_value_info = { 0.0f, 0.0f, 0.0f };
+	VkClearValue clear_value_info = { {{0.0f, 0.0f, 0.0f, 1.0f}} };
 
 	VkRect2D vk_rect_info = {};
 	vk_rect_info.extent = swapchain_extent;
@@ -108,4 +104,52 @@ void vk_simple_triangle::vk_record_command_buffer(VkCommandBuffer command_buffer
 	}
 	//Command Buffer state : RECORDING -> EXECUTABLE
 	vk_command_buffer_state = VK_COMMAND_BUFFER_EXECUTABLE;
+}
+
+void vk_simple_triangle::vk_draw_frame_on_screen() {
+	uint32_t available_image_index;
+
+	//Wait for previous frame to finish rendering
+	vkWaitForFences(vk_device, 1, &frame_render_sync, VK_TRUE, UINT64_MAX);
+	vkResetFences(vk_device, 1, &frame_render_sync);
+
+	//Acquire the next frame once available
+	vkAcquireNextImageKHR(vk_device, vk_swapchain, UINT64_MAX, image_available_sync, VK_NULL_HANDLE, &available_image_index);
+
+	//Once image is available draw and submit to Queue
+	vkResetCommandBuffer(vk_command_buffer, 0);
+	vk_record_command_buffer(vk_command_buffer, available_image_index);
+
+	VkSemaphore wait_semaphore [] = { image_available_sync };
+	VkSemaphore signal_semaphore [] = { render_finish_sync };
+	VkPipelineStageFlags pipeline_wait_stage[] = { VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT };
+
+	VkSubmitInfo submit_command_buffer = {};
+	submit_command_buffer.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
+	submit_command_buffer.pNext = nullptr;
+	submit_command_buffer.commandBufferCount = 1;
+	submit_command_buffer.pCommandBuffers = &vk_command_buffer;
+	submit_command_buffer.waitSemaphoreCount = 1;
+	submit_command_buffer.pWaitSemaphores = wait_semaphore;
+	submit_command_buffer.pWaitDstStageMask = pipeline_wait_stage;
+	submit_command_buffer.signalSemaphoreCount = 1;
+	submit_command_buffer.pSignalSemaphores = signal_semaphore;
+
+	VkResult result = vkQueueSubmit(vk_graphics_queue, 1, &submit_command_buffer, frame_render_sync);
+	//Once processing is done it will signal "frame_render_sync" fence
+
+	VkSwapchainKHR swap_chains[] = { vk_swapchain };
+
+	//Present frame on screen
+	VkPresentInfoKHR present_image = {};
+	present_image.sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR;
+	present_image.pNext = nullptr;
+	present_image.swapchainCount = 1;
+	present_image.pSwapchains = swap_chains;
+	present_image.waitSemaphoreCount = 1;
+	present_image.pWaitSemaphores = signal_semaphore;
+	present_image.pImageIndices = &available_image_index;
+	present_image.pResults = nullptr;
+
+	vkQueuePresentKHR(vk_present_queue, &present_image);
 }

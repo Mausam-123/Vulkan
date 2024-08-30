@@ -54,7 +54,12 @@ class vk_simple_triangle {
 public:
 	vk_simple_triangle();
 	int vk_init(GLFWwindow* window);
-	void vk_cleanup();
+	void vk_draw_frame_on_screen(void);
+	void vk_cleanup(void);
+	
+	void vk_wait_for_idle(void) {
+		vkDeviceWaitIdle(vk_device);
+	};
 
 	~vk_simple_triangle();
 private:
@@ -91,6 +96,11 @@ private:
 	VkCommandBuffer vk_command_buffer;
 	uint32_t vk_command_buffer_state;
 
+	//Semaphore and Fences
+	VkSemaphore image_available_sync;
+	VkSemaphore render_finish_sync;
+	VkFence frame_render_sync;
+
 	void vk_create_instance(void);	//Create Instance
 	void vk_register_validation_layer(void);
 	void vk_populateDebugMessengerCreateInfo(VkDebugUtilsMessengerCreateInfoEXT& createInfo);
@@ -125,4 +135,7 @@ private:
 	void vk_create_command_pool(void);
 	void vk_allocate_command_buffer(void);
 	void vk_record_command_buffer(VkCommandBuffer command_buffer, uint32_t image_index);
+
+	//Function to manage sync objects
+	void vk_create_sync_objects(void);
 };

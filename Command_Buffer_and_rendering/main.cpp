@@ -32,8 +32,10 @@ int main() {
 	while (!glfwWindowShouldClose(Window))
 	{
 		glfwPollEvents();
+		vk_triangle.vk_draw_frame_on_screen();
 	}
 
+	vk_triangle.vk_wait_for_idle();
 	vk_triangle.vk_cleanup();
 
 	// Destroy GLFW window and stop GLFW
